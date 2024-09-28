@@ -27,7 +27,6 @@ const (
 
 func PunifyURLHandler(w http.ResponseWriter, r *http.Request) {
 	var req shortenRequest
-	log.Println(r.Body)
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil || req.LongURL == "" {
 		log.Printf("An error has occurred when decoding the URL: %s", err.Error())
