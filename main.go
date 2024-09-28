@@ -12,8 +12,8 @@ import (
 )
 
 func main() {
-	flag.DurationVar(&cache.EvictInterval, "evictInterval", 30*time.Second, "Interval for eviction checks")
-	flag.DurationVar(&cache.TTL, "inactiveTTL", 30*time.Second, "Time after which inactive entries are evicted")
+	flag.DurationVar(&cache.EvictInterval, "e", 30*time.Second, "Interval for eviction checks")
+	flag.DurationVar(&cache.TTL, "tts", 30*time.Second, "Time after which inactive entries are evicted")
 	flag.Parse()
 
 	log.Printf("Cache eviction interval set to %s", cache.EvictInterval.String())
