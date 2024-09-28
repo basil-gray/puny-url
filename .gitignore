@@ -1,0 +1,14 @@
+puny-url.db
+
+puny-url
+
+# Build and test files
+*.test
+*.out
+
+.DS_Store
+Thumbs.db
+
+.vscode/
+.idea/
+*.swp
