@@ -9,8 +9,8 @@ import (
 func SetupRoutes() *mux.Router {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/shorten", api.PunifyURLHandler).Methods("POST")
-	r.HandleFunc("/{id}", api.RedirectHandler).Methods("GET")
+	r.HandleFunc("/shorten", api.HandlePunyURL).Methods("POST")
+	r.HandleFunc("/{id}", api.HandleRedirect).Methods("GET")
 
 	return r
 }
