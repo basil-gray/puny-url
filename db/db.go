@@ -54,3 +54,12 @@ func GetLongURL(id string) (string, error) {
 	}
 	return longURL, nil
 }
+
+func GetShortIDByLongURL(longURL string) (string, error) {
+	var shortID string
+	err := db.QueryRow("SELECT id FROM urls WHERE long_url = ?", longURL).Scan(&shortID)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return shortID, err
+}
