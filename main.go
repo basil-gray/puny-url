@@ -12,20 +12,24 @@ import (
 )
 
 func main() {
-	flag.DurationVar(&cache.EvictInterval, "e", 30*time.Second, "Interval for eviction checks")
-	flag.DurationVar(&cache.TTL, "tts", 30*time.Second, "Time after which inactive entries are evicted")
+
+	var evictInterval time.Duration
+	var ttl time.Duration
+
+	flag.DurationVar(&evictInterval, "e", 30*time.Second, "Interval for eviction checks")
+	flag.DurationVar(&ttl, "ttl", 30*time.Second, "Time after which inactive entries are evicted")
 	flag.Parse()
 
-	log.Printf("Cache eviction interval set to %s", cache.EvictInterval.String())
-	log.Printf("Inactive TTL set to %s", cache.TTL.String())
+	log.Printf("Cache eviction interval set to %s", evictInterval.String())
+	log.Printf("Inactive TTL set to %s", ttl)
 
 	db.InitDB()
 
 	defer db.Close()
 
-	go cache.StartCacheEviction()
+	c := cache.New(evictInterval, ttl)
 
-	r := routes.SetupRoutes()
+	r := routes.SetupRoutes(c)
 
 	log.Println("PunyURL now running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", r))

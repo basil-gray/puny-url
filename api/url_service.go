@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"time"
 
 	"puny-url/cache"
 	"puny-url/db"
@@ -25,11 +24,12 @@ const (
 	BaseURL = "http://localhost:8080/"
 )
 
-func HandlePunyURL(w http.ResponseWriter, r *http.Request) {
+func HandlePunyURL(w http.ResponseWriter, r *http.Request, c *cache.Cache) {
 	if r.ContentLength == 0 {
 		http.Error(w, "Empty request", http.StatusBadRequest)
 		return
 	}
+
 	var req shortenRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -45,18 +45,15 @@ func HandlePunyURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	req.LongURL, err = helpers.ValidateURL(req.LongURL)
-
 	if err != nil {
 		log.Printf("An error has occurred when validating the URL: %s", err.Error())
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	now := time.Now()
-
 	// O(n) lookup in the worst case; can this be improved?
 	// Check the cache
-	cachedShortID, found := cache.Find(req.LongURL, now)
+	cachedShortID, found := c.FindByLong(req.LongURL)
 	if found {
 		log.Printf("(Cache hit) Short URL found for %s: %s", req.LongURL, cachedShortID)
 		w.Header().Set("Content-Type", "application/json")
@@ -74,7 +71,7 @@ func HandlePunyURL(w http.ResponseWriter, r *http.Request) {
 
 	if existingShortID != "" {
 		log.Printf("Existing short URL found in the database for %s: %s", req.LongURL, existingShortID)
-		cache.Update(existingShortID, req.LongURL, now)
+		c.Update(existingShortID, req.LongURL)
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(shortenResponse{ShortURL: BaseURL + existingShortID})
 		return
@@ -89,38 +86,33 @@ func HandlePunyURL(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update the cache
-	cache.Update(shortID, req.LongURL, now)
+	c.Update(shortID, req.LongURL)
 	log.Printf("Short URL %s generated for %s", shortID, req.LongURL)
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(shortenResponse{ShortURL: BaseURL + shortID})
 }
 
-func HandleRedirect(w http.ResponseWriter, r *http.Request) {
+func HandleRedirect(w http.ResponseWriter, r *http.Request, c *cache.Cache) {
 	vars := mux.Vars(r)
 	shortID := vars["id"]
 
-	now := time.Now()
-
-	if entry, found := cache.Map.Load(shortID); found {
-		longURL := entry.(cache.CacheEntry).LongURL
-
-		// Update the last accessed time
+	// Cache lookup
+	if longURL, found := c.GetLong(shortID); found {
 		log.Printf("(Cache hit) %s: %s", shortID, longURL)
-		cache.Map.Store(shortID, cache.CacheEntry{LongURL: longURL, Timestamp: entry.(cache.CacheEntry).Timestamp, LastAccessed: now})
 		http.Redirect(w, r, longURL, http.StatusFound)
 		return
 	}
 
 	// If not found in cache, lookup the database
-	longURL, err := db.GetLongURL(shortID)
+	longURL, err := db.GetLong(shortID)
 	if err != nil || longURL == "" {
 		log.Printf("Could not find %s in the database", shortID)
 		http.Error(w, "URL not found", http.StatusNotFound)
 		return
 	}
 
-	cache.Update(shortID, longURL, now)
+	c.Update(shortID, longURL)
 	log.Printf("(Cache miss) %s: %s has been put back into the cache.", shortID, longURL)
 
 	http.Redirect(w, r, longURL, http.StatusFound)
