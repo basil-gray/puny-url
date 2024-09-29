@@ -6,51 +6,67 @@ import (
 	"time"
 )
 
-type CacheEntry struct {
+type Cache struct {
+	Entries       sync.Map
+	evictInterval time.Duration
+	ttl           time.Duration
+}
+
+type cacheEntry struct {
 	LongURL      string
 	Timestamp    time.Time
 	LastAccessed time.Time
 }
 
-var (
-	Map           = sync.Map{}
-	EvictInterval time.Duration
-	TTL           time.Duration
-)
+func New(evictInterval, ttl time.Duration) *Cache {
+	c := &Cache{
+		evictInterval: evictInterval,
+		ttl:           ttl,
+	}
+	go c.startEviction()
+	return c
+}
 
-func StartCacheEviction() {
+func (c *Cache) startEviction() {
 	for {
-		time.Sleep(EvictInterval)
+		time.Sleep(c.evictInterval)
 		now := time.Now()
 
-		Map.Range(func(key, value interface{}) bool {
-			entry := value.(CacheEntry)
-			if now.Sub(entry.LastAccessed) > TTL {
+		c.Entries.Range(func(key, value interface{}) bool {
+			entry := value.(cacheEntry)
+			if now.Sub(entry.LastAccessed) > c.ttl {
 				log.Printf("%s: %s has been evicted from the cache due to inactivity.", key, entry.LongURL)
-				Map.Delete(key)
+				c.Entries.Delete(key)
 			}
 			return true
 		})
 	}
 }
 
-func Find(longURL string, now time.Time) (string, bool) {
+func (c *Cache) FindByLong(longURL string) (string, bool) {
 	var cachedShortID string
-	Map.Range(func(key, value interface{}) bool {
-		entry := value.(CacheEntry)
+	c.Entries.Range(func(key, value interface{}) bool {
+		entry := value.(cacheEntry)
 		if entry.LongURL == longURL {
 			cachedShortID = key.(string)
-			Map.Store(cachedShortID, CacheEntry{LongURL: longURL, Timestamp: now, LastAccessed: now})
+			c.Update(cachedShortID, longURL)
 			return false
 		}
 		return true
 	})
-	if cachedShortID != "" {
-		return cachedShortID, true
-	}
-	return "", false
+	return cachedShortID, cachedShortID != ""
 }
 
-func Update(shortID, longURL string, now time.Time) {
-	Map.Store(shortID, CacheEntry{LongURL: longURL, Timestamp: now, LastAccessed: now})
+func (c *Cache) GetLong(shortURL string) (string, bool) {
+	entry, found := c.Entries.Load(shortURL)
+	if !found {
+		return "", false
+	}
+	cacheEntry := entry.(cacheEntry)
+	return cacheEntry.LongURL, true
+}
+
+func (c *Cache) Update(shortID, longURL string) {
+	now := time.Now()
+	c.Entries.Store(shortID, cacheEntry{LongURL: longURL, Timestamp: now, LastAccessed: now})
 }

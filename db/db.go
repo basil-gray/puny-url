@@ -43,7 +43,7 @@ func StoreURL(id string, longURL string) error {
 	return err
 }
 
-func GetLongURL(id string) (string, error) {
+func GetLong(id string) (string, error) {
 	var longURL string
 	err := db.QueryRow("SELECT long_url FROM urls WHERE id = ?", id).Scan(&longURL)
 	if err != nil {
