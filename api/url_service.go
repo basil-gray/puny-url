@@ -26,11 +26,21 @@ const (
 )
 
 func PunifyURLHandler(w http.ResponseWriter, r *http.Request) {
+	if r.ContentLength == 0 {
+		http.Error(w, "Empty request", http.StatusBadRequest)
+		return
+	}
 	var req shortenRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil || req.LongURL == "" {
+	if err != nil {
 		log.Printf("An error has occurred when decoding the URL: %s", err.Error())
 		http.Error(w, "Invalid request", http.StatusBadRequest)
+		return
+	}
+
+	if req.LongURL == "" {
+		log.Printf("An error has occurred when decoding the UTL: long URL is empty")
+		http.Error(w, "Long URL is empty", http.StatusBadRequest)
 		return
 	}
 
