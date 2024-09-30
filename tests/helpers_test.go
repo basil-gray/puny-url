@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"puny-url/internal/helpers"
 	"strings"
 	"testing"
 )
@@ -43,16 +44,28 @@ func TestValidURLs(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name:        "URL with percent encoding",
+			input:       "http://example.com/path%20with%20spaces",
+			expected:    "http://example.com/path%20with%20spaces",
+			expectError: false,
+		},
+		{
 			name:        "URL with port",
 			input:       "example.com:8080",
 			expected:    "http://example.com:8080",
+			expectError: false,
+		},
+		{
+			name:        "TLD with 2 characters",
+			input:       "http://example.co",
+			expected:    "http://example.co",
 			expectError: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ValidateURL(tt.input)
+			result, err := helpers.ParseURL(tt.input)
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("ValidateURL(%q) expected an error, but got none", tt.input)
@@ -118,11 +131,17 @@ func TestInvalidURLs(t *testing.T) {
 			expected:    "",
 			expectError: true,
 		},
+		{
+			name:        "URL with spaces",
+			input:       "http://exam ple.com",
+			expected:    "",
+			expectError: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result, err := ValidateURL(tt.input)
+			result, err := helpers.ParseURL(tt.input)
 			if tt.expectError {
 				if err == nil {
 					t.Errorf("ValidateURL(%q) expected an error, but got none", tt.input)

@@ -5,7 +5,9 @@ A lightweight URL shortener written in Go that utilises:
 1. SQLite for persistent storage
 2. The concurrency-safe sync.Map data structure to handle concurrent requests and cache URLs that see frequent access
 
-To improve scalability, each URL has a TTL value configurable via an arguement. The TTL value is refreshed at every successful cache hit. URLs that have exceeded their TTL are evicted from the cache by a job running in a goroutine, also at a configurable interval.
+To improve scalability, each URL has a TTL value configurable by passing an arguement. The TTL is refreshed at every successful cache hit, or whenever a trip is made to the database. URLs that have exceeded their TTL are evicted from the cache by a job running in a goroutine, also at a configurable interval.
+
+When attempting to generate a short URL for a duplicate long one, PunyURL will attempt to first find it in the cache, and then the database. 
 
 ### Screenshot
 <img width="1215" alt="image" src="https://github.com/user-attachments/assets/7b2cbe19-d230-45f5-bc75-ad85d66ad2bc">
@@ -39,11 +41,16 @@ go run .
 ## Flags
 
 ```
--- The eviction interval (default: 30s)
+// Silent flag to prevent logging cache hits/misses
+-s
+
+// The interval of the eviction job (default: 1s)
 -e 30s
 
--- The TTL for a URL in the cache (default: 30s)
+// The TTL for a URL in the cache (default: 30s)
 -ttl 30s
+
+-port 8080
 
 These flags are DurationVar, so 30m and 1h are also accepted values.
 
@@ -51,6 +58,6 @@ These flags are DurationVar, so 30m and 1h are also accepted values.
 
 # Tests
 
-There are currently only tests that check for valid and invalid URLs. You can run them like so:
+There are currently only tests that check for accepting and rejecting valid and invalid URLs. You can run them like so:
 
-```go test ./... ```
+```go test ./tests ```
