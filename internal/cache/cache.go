@@ -8,14 +8,14 @@ import (
 )
 
 type Cache struct {
-	entries       sync.Map
+	entries       sync.Map // key: shortID, value: cacheEntry
 	evictInterval time.Duration
 	ttl           time.Duration
 }
 
 type cacheEntry struct {
 	LongURL      string
-	LastAccessed time.Time
+	lastAccessed time.Time
 }
 
 func New(evictInterval, ttl time.Duration) *Cache {
@@ -34,7 +34,7 @@ func (c *Cache) startEviction() {
 
 		c.entries.Range(func(key, value interface{}) bool {
 			entry := value.(cacheEntry)
-			if now.Sub(entry.LastAccessed) > c.ttl {
+			if now.Sub(entry.lastAccessed) > c.ttl {
 				logger.Info(key.(string) + ": " + entry.LongURL + " has been evicted from the cache due to inactivity.")
 				c.entries.Delete(key)
 			}
@@ -57,7 +57,7 @@ func (c *Cache) FindByLong(longURL string) (string, bool) {
 	return cachedShortID, cachedShortID != ""
 }
 
-func (c *Cache) GetLong(shortID string) (string, bool) {
+func (c *Cache) Load(shortID string) (string, bool) {
 	entry, found := c.entries.Load(shortID)
 	if !found {
 		return "", false
@@ -67,5 +67,5 @@ func (c *Cache) GetLong(shortID string) (string, bool) {
 }
 
 func (c *Cache) Update(shortID, longURL string) {
-	c.entries.Store(shortID, cacheEntry{LongURL: longURL, LastAccessed: time.Now()})
+	c.entries.Store(shortID, cacheEntry{LongURL: longURL, lastAccessed: time.Now()})
 }

@@ -61,7 +61,7 @@ func HandleRedirect(w http.ResponseWriter, r *http.Request, c *cache.Cache) {
 	}
 
 	// Cache lookup
-	if longURL, found := c.GetLong(shortID); found {
+	if longURL, found := c.Load(shortID); found {
 		c.Update(shortID, longURL)
 		logger.Info(fmt.Sprintf("(Cache hit) Redirecting to %s: %s", shortID, longURL))
 		http.Redirect(w, r, longURL, http.StatusFound)
