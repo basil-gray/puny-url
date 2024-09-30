@@ -10,7 +10,7 @@ To improve scalability, each URL has a TTL value configurable by passing an argu
 When attempting to generate a short URL for a duplicate long one, PunyURL will attempt to first find it in the cache, and then the database. 
 
 ### Screenshot
-<img width="1215" alt="image" src="https://github.com/user-attachments/assets/7b2cbe19-d230-45f5-bc75-ad85d66ad2bc">
+<img width="1258" alt="Screenshot 2024-09-30 at 10 18 05" src="https://github.com/user-attachments/assets/e2f2e812-fd30-4d40-8873-89b626b8bacc">
 
 # Usage
 ## Docker
@@ -46,13 +46,12 @@ go run .
 
 // The interval of the eviction job (default: 1s)
 -e 30s
+These flags are DurationVar, so 30m and 1h are also accepted values.
 
 // The TTL for a URL in the cache (default: 30s)
 -ttl 30s
 
 -port 8080
-
-These flags are DurationVar, so 30m and 1h are also accepted values.
 
 ```
 
