@@ -4,12 +4,14 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
+	"net"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 )
 
-func ValidateURL(inputURL string) (string, error) {
+func ParseURL(inputURL string) (string, error) {
 	inputURL = strings.TrimSpace(inputURL)
 
 	if inputURL == "" {
@@ -41,10 +43,16 @@ func ValidateURL(inputURL string) (string, error) {
 		return "", fmt.Errorf("unsupported URL scheme: %s", parsedURL.Scheme)
 	}
 
+	// Check if the host is an IP address
+	if ip := net.ParseIP(parsedURL.Hostname()); ip != nil {
+		// It's a valid IP address, no further hostname checks needed
+		return parsedURL.String(), nil
+	}
+
 	parts := strings.Split(parsedURL.Hostname(), ".")
 
 	// If we failed to parse the long URL into at least two parts, something has seriously gone wrong
-	if len(parts) < 2 {
+	if len(parts) < 2 || len(parts) > 3 {
 		return "", fmt.Errorf("invalid hostname: malformed URL")
 	}
 
@@ -79,4 +87,13 @@ func GenerateShortID() string {
 	b := make([]byte, 6)
 	rand.Read(b)
 	return base64.URLEncoding.EncodeToString(b)
+}
+
+func IsValidShortID(id string) bool {
+	if len(id) != 8 {
+		return false
+	}
+
+	var validIDPattern = regexp.MustCompile(`^[A-Za-z0-9-_]{8}$`)
+	return validIDPattern.MatchString(id)
 }
