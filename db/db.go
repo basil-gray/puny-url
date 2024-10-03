@@ -38,12 +38,12 @@ func runMigrations() {
 	}
 }
 
-func StoreURL(id string, longURL string) error {
+func storeURL(id string, longURL string) error {
 	_, err := db.Exec("INSERT INTO urls (id, long_url) VALUES (?, ?)", id, longURL)
 	return err
 }
 
-func GetLong(id string) (string, error) {
+func getLong(id string) (string, error) {
 	var longURL string
 	err := db.QueryRow("SELECT long_url FROM urls WHERE id = ?", id).Scan(&longURL)
 	if err != nil {
