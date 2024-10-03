@@ -37,8 +37,8 @@ func ParsePunyRequest(r *http.Request) (*models.PunyRequest, error) {
 func GetShortID(c *cache.Cache, longURL string) (string, error) {
 	shortId, found := c.FindByLong(longURL)
 	if found {
-		c.UpdateCache(shortId, longURL)
 		logger.Info(fmt.Sprintf("(Cache hit) %s: %s", shortId, longURL))
+		c.UpdateCache(shortId, longURL)
 		return shortId, nil
 	}
 
@@ -52,11 +52,13 @@ func GetShortID(c *cache.Cache, longURL string) (string, error) {
 
 	if shortId != "" {
 		c.UpdateCache(shortId, longURL)
+		logger.Info(fmt.Sprintf("(Cache update) %s: %s retrieved from DB", shortId, longURL))
 		return shortId, nil
 	}
 
 	shortId = helpers.GenerateShortID()
 	err = db.CreateURL(shortId, longURL)
+	logger.Info(fmt.Sprintf("New short URL generated. %s: %s", shortId, longURL))
 	if err != nil {
 		return "", fmt.Errorf("failed to save new URL %s", longURL)
 	}
@@ -68,12 +70,12 @@ func GetShortID(c *cache.Cache, longURL string) (string, error) {
 
 func GetLongId(c *cache.Cache, shortID string) (string, error) {
 	if longURL, found := c.LoadFromCache(shortID); found {
-		logger.Info(fmt.Sprintf("(Cache hit) %s, %s.", shortID, longURL))
+		logger.Info(fmt.Sprintf("(Cache hit) %s, %s", shortID, longURL))
 		c.UpdateCache(shortID, longURL)
 		return longURL, nil
 	}
 
-	logger.Info(fmt.Sprintf("(Cache miss) %s.", shortID))
+	logger.Info(fmt.Sprintf("(Cache miss) %s", shortID))
 
 	longURL, err := db.LoadFromDB(shortID)
 	if err != nil {

@@ -59,7 +59,6 @@ func (c *Cache) FindByLong(longURL string) (string, bool) {
 }
 
 func (c *Cache) UpdateCache(shortId string, longURL string) {
-	logger.Info(fmt.Sprintf("(Cache update) %s: %s", shortId, longURL))
 	c.store(shortId, longURL)
 }
 

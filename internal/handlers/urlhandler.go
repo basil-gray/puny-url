@@ -45,7 +45,7 @@ func HandleRedirect(w http.ResponseWriter, r *http.Request, c *cache.Cache) {
 		return
 	}
 
-	logger.Info(fmt.Sprintf("Redirecting to %s: %s.", shortID, longURL))
+	logger.Info(fmt.Sprintf("Redirecting to %s: %s", shortID, longURL))
 
 	http.Redirect(w, r, longURL, http.StatusFound)
 }
