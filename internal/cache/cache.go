@@ -1,6 +1,7 @@
 package cache
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -35,7 +36,7 @@ func (c *Cache) startEviction() {
 		c.entries.Range(func(key, value interface{}) bool {
 			entry := value.(cacheEntry)
 			if now.Sub(entry.lastAccessed) > c.ttl {
-				logger.Info(key.(string) + ": " + entry.LongURL + " has been evicted from the cache due to inactivity.")
+				logger.Info(fmt.Sprintf("(Cache expiry) %s: %s has been evicted from the cache", key, entry.LongURL))
 				c.entries.Delete(key)
 			}
 			return true
@@ -57,15 +58,25 @@ func (c *Cache) FindByLong(longURL string) (string, bool) {
 	return cachedShortID, cachedShortID != ""
 }
 
-func (c *Cache) Load(shortID string) (string, bool) {
+func (c *Cache) UpdateCache(shortId string, longURL string) {
+	c.store(shortId, longURL)
+}
+
+func (c *Cache) LoadFromCache(shortId string) (string, bool) {
+	longURL, found := c.load(shortId)
+	c.store(shortId, longURL) // Every time we touch the cache, refresh
+	return longURL, found
+}
+
+func (c *Cache) store(shortID string, longURL string) {
+	c.entries.Store(shortID, cacheEntry{LongURL: longURL, lastAccessed: time.Now()})
+}
+
+func (c *Cache) load(shortID string) (string, bool) {
 	entry, found := c.entries.Load(shortID)
 	if !found {
 		return "", false
 	}
 	cacheEntry := entry.(cacheEntry)
 	return cacheEntry.LongURL, true
-}
-
-func (c *Cache) Update(shortID, longURL string) {
-	c.entries.Store(shortID, cacheEntry{LongURL: longURL, lastAccessed: time.Now()})
 }
